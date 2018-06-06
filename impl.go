@@ -53,12 +53,12 @@ func Impl(receiver string, iface string, w io.Writer) error {
 		VarReceiver: rt.VarName(),
 		Receiver:    rt.VarType(),
 	}
-	for _, fn := range newFns {
-		s, err := fn.Decl(rp)
+	for i, fn := range newFns {
+		name, s, err := fn.Decl(rp)
 		if err != nil {
 			return errors.Wrapf(err, "error on get decl by func (%s)", fn.Name)
 		}
-		v.Funcs = append(v.Funcs, s)
+		v.Funcs = append(v.Funcs, tplFunc{Name: name, Decl: s, IsLast: i == len(newFns)-1})
 	}
 	err = tpl.Execute(w, v)
 	if err != nil {
@@ -262,7 +262,7 @@ type Func struct {
 }
 
 // Decl - string representation of func on target package
-func (f *Func) Decl(targetPkg *Pkg) (string, error) {
+func (f *Func) Decl(targetPkg *Pkg) (string, string, error) {
 	// if func from another package
 	if targetPkg.Path != f.Pkg.Path {
 		ast.Inspect(f.ftype, func(n ast.Node) bool {
@@ -285,9 +285,9 @@ func (f *Func) Decl(targetPkg *Pkg) (string, error) {
 	// format to pretty string
 	err := format.Node(&bs, f.fset, funcVar)
 	if err != nil {
-		return "", errors.Wrap(err, "error on format func")
+		return "", "", errors.Wrap(err, "error on format func")
 	}
-	return strings.TrimPrefix(bs.String(), "func "), nil
+	return f.Name, strings.TrimPrefix(bs.String(), "func "), nil
 }
 
 var (
@@ -295,10 +295,12 @@ var (
 {{- $varR := .VarReceiver}}
 {{- $rec := .Receiver}}
 {{- range .Funcs -}}
-func ({{$varR}} {{$rec}}) {{.}} {
+// {{.Name}} ...
+func ({{$varR}} {{$rec}}) {{.Decl}} {
 	panic("not implemented")
 }
-
+{{if not .IsLast}}
+{{end -}}
 {{end -}}
 `)
 )
@@ -310,5 +312,11 @@ func mustTemplate(s string) *template.Template {
 type tplVar struct {
 	VarReceiver string
 	Receiver    string
-	Funcs       []string
+	Funcs       []tplFunc
+}
+
+type tplFunc struct {
+	Name   string
+	Decl   string
+	IsLast bool
 }

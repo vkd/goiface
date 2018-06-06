@@ -12,6 +12,7 @@ func (m MyType) MyFunc2() MyIface {
 
 type MyIface interface {
 	Iface() *MyType
+	IfaceCustom(arg ...int) (*MyType, error)
 }
 
 func MyFuncName() *MyType {
