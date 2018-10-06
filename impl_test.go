@@ -21,20 +21,21 @@ func TestImpl(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{"base Writer", args{"github.com/vkd/goiface/testdata.MyType", "io.Writer"},
-			`func (m MyType) Write(p []byte) (n int, err error) {
-	panic("not implemented")
-}
-
-`, false},
-		{"base ReadWriter", args{"github.com/vkd/goiface/testdata.MyType", "io.ReadWriter"},
-			`func (m MyType) Read(p []byte) (n int, err error) {
-	panic("not implemented")
-}
-
+			`// Write ...
 func (m MyType) Write(p []byte) (n int, err error) {
 	panic("not implemented")
 }
+`, false},
+		{"base ReadWriter", args{"github.com/vkd/goiface/testdata.MyType", "io.ReadWriter"},
+			`// Read ...
+func (m MyType) Read(p []byte) (n int, err error) {
+	panic("not implemented")
+}
 
+// Write ...
+func (m MyType) Write(p []byte) (n int, err error) {
+	panic("not implemented")
+}
 `, false},
 	}
 	for _, tt := range tests {
@@ -45,7 +46,7 @@ func (m MyType) Write(p []byte) (n int, err error) {
 				return
 			}
 			if gotW := w.String(); gotW != tt.wantW {
-				t.Errorf("Impl() = %v, want %v", gotW, tt.wantW)
+				t.Errorf("Impl() = \n%v, want \n%v", gotW, tt.wantW)
 			}
 		})
 	}
@@ -111,7 +112,7 @@ func TestIfaceFuncs(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"base interface", "github.com/vkd/goiface/testdata.MyIface", []string{"Iface"}, false},
+		{"base interface", "github.com/vkd/goiface/testdata.MyIface", []string{"Iface", "IfaceCustom"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -267,7 +268,7 @@ func TestFunc_Decl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := handlerFn.Decl(ParsePkg(tt.pkg))
+			_, got, err := handlerFn.Decl(ParsePkg(tt.pkg))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Func.Decl() error = %v, wantErr %v", err, tt.wantErr)
 				return
